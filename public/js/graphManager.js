@@ -61,7 +61,7 @@ function getData() {
 }
 
 function formatDependencies(hostData, dependencyData, isHierarchical, positionData, isFullscreen, settings) {
-    //Function takes host state data, dependency data, and position data and builds a vis.js usable object using 
+    //Function takes host state data, dependency data, and position data and builds a vis.js usable object using
     //the HostArray and Host objects. Neccesary due to needing match hosts with passed dependencies.
 
 
@@ -95,7 +95,7 @@ function formatDependencies(hostData, dependencyData, isHierarchical, positionDa
 function drawNetwork(Hosts, isHierarchical, isFullscreen, settings) {
 
     //function uses data provided by the 'Hosts' and 'settings' objects to draw a vis.js network
-    //In accordance with passed settings and data. 
+    //In accordance with passed settings and data.
 
     var color_border = 'yellow';
 
@@ -111,7 +111,7 @@ function drawNetwork(Hosts, isHierarchical, isFullscreen, settings) {
 
         currHost = Object.keys(Hosts.hostObject)[i]; //gets name of current host based on key iter
 
-        if (settings.display_only_dependencies && !Hosts.hostObject[currHost].hasDependencies) { //skip adding node 
+        if (settings.display_only_dependencies && !Hosts.hostObject[currHost].hasDependencies) { //skip adding node
 
             continue;
 
@@ -374,7 +374,7 @@ function simulateNewNetwork(network, nodes) {
 }
 
 function simulateChangedNetwork(network, nodes) {
-    //function simulates the network for a limited number of physics iterations, 
+    //function simulates the network for a limited number of physics iterations,
     //usually enough to correctly place a newly added host/hosts.
 
     $('#notifications').append().html('<li class="info">Network Change Detected</li>');
@@ -428,17 +428,17 @@ function startEventListeners(network, networkData, settings) {
 
             if (location.href.indexOf('/icingaweb2') > 1) {
                 console.log("YOUR MOTHER WAS A HAMPSTER")
-                hostMonitoringAddress = '/icingaweb2/monitoring/host/show?host='
+                hostMonitoringAddress = '/icingaweb2/icingadb/host/show?host='
             } else {
 
-                hostMonitoringAddress = '/monitoring/host/show?host=';
+                hostMonitoringAddress = '/icingadb/host/show?host=';
             }
             location.href = './network#!' + hostMonitoringAddress + params.nodes[0]; //redirect to host info page.
 
         }
     });
 
-    network.on("selectNode", function (params) { //on selecting node, background of label is made solid white for readabillity. 
+    network.on("selectNode", function (params) { //on selecting node, background of label is made solid white for readabillity.
         var clickedNode = network.body.nodes[params.nodes[0]];
         font_size = clickedNode.options.font.size;
         clickedNode.setOptions({
@@ -608,7 +608,7 @@ function startDependencyModeListeners(networkData, network, settings) {
     var container = document.getElementById('dependency-network');
 
 
-    network.on("selectNode", function (params) { //on selecting node, background of label is made solid white for readabillity. 
+    network.on("selectNode", function (params) { //on selecting node, background of label is made solid white for readabillity.
 
 
         var selectedNode = network.body.nodes[params.nodes[0]];
@@ -793,8 +793,8 @@ function deployChanges() {
 
 function Host(hostData) {
 
-    //function accepts raw host data pulled from icinga 2 api, and formats it into a more usable format 
-    //while providing functions to add dependencies and position 
+    //function accepts raw host data pulled from icinga 2 api, and formats it into a more usable format
+    //while providing functions to add dependencies and position
 
     determineStatus = (state, wasReachable) => {
 
