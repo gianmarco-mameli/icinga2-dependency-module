@@ -428,10 +428,10 @@ function startEventListeners(network, networkData, settings) {
 
             if (location.href.indexOf('/icingaweb2') > 1) {
                 console.log("YOUR MOTHER WAS A HAMPSTER")
-                hostMonitoringAddress = '/icingaweb2/icingadb/host/show?name='
+                hostMonitoringAddress = '/icingaweb2/icingadb/host?name='
             } else {
 
-                hostMonitoringAddress = '/icingadb/host/show?name=';
+                hostMonitoringAddress = '/icingadb/host?name=';
             }
             location.href = './network#!' + hostMonitoringAddress + params.nodes[0]; //redirect to host info page.
 
