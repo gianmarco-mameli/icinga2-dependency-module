@@ -132,10 +132,10 @@ function drawGrid() {
 
                 if (location.href.indexOf('/icingaweb2') > 1) {
 
-                    hostMonitoringAddress = 'icingaweb2/icingadb/host/show?host='
+                    hostMonitoringAddress = 'icingaweb2/icingadb/host/show?name='
                 } else {
 
-                    hostMonitoringAddress = 'icingadb/host/show?host=';
+                    hostMonitoringAddress = 'icingadb/host/show?name=';
                 }
 
                 location.href = './statusGrid#!/' + hostMonitoringAddress + params.nodes[0]; //redirect to host info page.
