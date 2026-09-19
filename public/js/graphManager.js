@@ -151,7 +151,7 @@ function drawNetwork(Hosts, isHierarchical, isFullscreen, settings) {
         }
 
 
-        if (settings.always_display_large_labels && Hosts.hostObject[currHost].isLargeNode > 3) {
+        if (settings.label_large_nodes && Hosts.hostObject[currHost].isLargeNode > 3) {
             text_size = settings.text_size / 2;
         }
 

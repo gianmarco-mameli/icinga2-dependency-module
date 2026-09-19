@@ -4,12 +4,12 @@
 *
 * naming scheme explanation: In order to call functions from frontend, a capital "Action"
 * must be present at the end of every function, and there can be no other capitals or underscores in the exposed function name.
-* 
-* Additionally, functions are automatically routed by /module-name/name-of-controller/name-of-function
-* 
 *
-* Finally each exposed function requires a .phmtl page of the same name to be present in the /scripts/views folder in order to 
-* function, unless the function is terminated with 'exit'. this also means that any additional phtml page must have a 
+* Additionally, functions are automatically routed by /module-name/name-of-controller/name-of-function
+*
+*
+* Finally each exposed function requires a .phmtl page of the same name to be present in the /scripts/views folder in order to
+* function, unless the function is terminated with 'exit'. this also means that any additional phtml page must have a
 * corresponding 'pageAction() {}' function in the module controller in order to be displayed.
 */
 
@@ -27,6 +27,100 @@ use Exception;
 
 
 class ModuleController extends Controller{
+
+    private function getConfigPath() {
+
+        return '/etc/icingaweb2/modules/dependency_plugin/config.ini';
+
+    }
+
+    private function getModuleConfigData() {
+
+        $configPath = $this->getConfigPath();
+
+        if(!file_exists(dirname($configPath))){
+            throw new Exception('setup');
+        }
+
+        if(!file_exists($configPath) || !is_readable($configPath)){
+            throw new Exception('Unable to read module config.ini');
+        }
+
+        $config = parse_ini_file($configPath, true);
+
+        if($config === false){
+            throw new Exception('Unable to parse module config.ini');
+        }
+
+        return $config;
+
+    }
+
+    private function getConfigValue($section, $key, $default = null) {
+
+        $config = $this->getModuleConfigData();
+
+        if(isset($config[$section]) && array_key_exists($key, $config[$section])){
+            return $config[$section][$key];
+        }
+
+        return $default;
+
+    }
+
+    private function getApiSettings() {
+
+        $settings = array(
+            'api_host' => $this->getConfigValue('api', 'host'),
+            'api_endpoint' => $this->getConfigValue('api', 'port'),
+            'api_user' => $this->getConfigValue('api', 'user'),
+            'api_password' => $this->getConfigValue('api', 'password')
+        );
+
+        foreach($settings as $value){
+            if($value === null || $value === ''){
+                throw new Exception('API settings are incomplete');
+            }
+        }
+
+        return $settings;
+
+    }
+
+    private function getDefaultGraphSettings() {
+
+        return array(
+            'default_dependency_template' => array('value' => '', 'type' => 'string'),
+            'display_up' => array('value' => 'true', 'type' => 'bool'),
+            'display_down' => array('value' => 'true', 'type' => 'bool'),
+            'display_unreachable' => array('value' => 'true', 'type' => 'bool'),
+            'display_only_dependencies' => array('value' => 'true', 'type' => 'bool'),
+            'scaling' => array('value' => 'true', 'type' => 'bool'),
+            'label_large_nodes' => array('value' => 'true', 'type' => 'bool'),
+            'alias_only' => array('value' => 'true', 'type' => 'bool'),
+            'text_size' => array('value' => '25', 'type' => 'int'),
+            'fullscreen_mode' => array('value' => 'network', 'type' => 'string')
+        );
+
+    }
+
+    private function parseGraphSettings($settings) {
+
+        $parsedSettings = array();
+
+        foreach($settings as $name => $setting){
+            if($setting['type'] == 'bool'){
+                $parsedSettings[$name] = ($setting['value'] === 'true' || $setting['value'] === true || $setting['value'] === '1' || $setting['value'] === 1);
+            } else if($setting['type'] == 'int'){
+                $parsedSettings[$name] = ((int)($setting['value']));
+            } else {
+                $parsedSettings[$name] = $setting['value'];
+            }
+        }
+
+        return $parsedSettings;
+
+    }
 
     public function statusgridAction(){
 
@@ -71,7 +165,7 @@ class ModuleController extends Controller{
         ));
 
     }
-    
+
     public function networkAction() {
 
         $this->getTabs()->add('Network', array(
@@ -139,11 +233,11 @@ class ModuleController extends Controller{
     }
 
     public function getresourcesAction(){
-            
+
         $dbArr = [];
 
         try {
-           
+
             $resourcesfile = fopen("/etc/icingaweb2/resources.ini", 'r'); //get icinga resources (databases)
 
             while($line = fgets($resourcesfile)) {
@@ -168,64 +262,25 @@ class ModuleController extends Controller{
                 header('Content-Type: application/json; charset=UTF-8');
                 die(json_encode(array('message' => $e->getMessage(), 'code' => '500')));
         }
-        
-        echo json_encode($resources); 
+
+        echo json_encode($resources);
         fclose($resourcesfile);
-        
+
         exit;
 
     }
 
     function getResource() {
-    
-    try{
-           
-        $resourcesfile = fopen('/etc/icingaweb2/modules/dependency_plugin/config.ini', 'r'); //get icinga resources (databases)
 
-    }catch(Exception $e){
-
-        if(!file_exists('/etc/icingaweb2/modules/dependency_plugin/')){//config not created, module not kickstarted
- 
-        header('HTTP/1.1 500 Internal Server Error');
-        header('Content-Type: application/json; charset=UTF-8');
-
-        die(json_encode(array('message' => "setup", 'code' => '500')));
- 
-        } else{
-
-            header('HTTP/1.1 500 Internal Server Error');
-            header('Content-Type: application/json; charset=UTF-8');
-            die(json_encode(array('message' => $e->getMessage(), 'code' => '500')));
-        }
-
-
-    }
-
-
-        $dbname = [];
-
-        while($line = fgets($resourcesfile)) {
-
-            if(strpos($line, 'resource') !== false){
-
-                $dbname = explode('=', $line);
-                $dbname = explode('"', $dbname[1]);
-
-            }
-
-        }
-
-        fclose($resourcesfile);
-        
-        return $dbname[1];
+        return $this->getConfigValue('db', 'resource');
 
     }
 
     public function storesettingsAction(){
-        
 
-    //  this function uses a built-in icinga web function saveIni(); which automatically saves any passed data to 
-    //  /etc/icingaweb2/modules/name-of-moudle/config.ini 
+
+    //  this function uses a built-in icinga web function saveIni(); which automatically saves any passed data to
+    //  /etc/icingaweb2/modules/name-of-moudle/config.ini
 
         $json = $_POST["json"];
 
@@ -234,7 +289,7 @@ class ModuleController extends Controller{
         // var_dump($data);
 
         // die;
-        
+
         if($data != null){
 
             $resource = $data[0]['value'];
@@ -245,19 +300,14 @@ class ModuleController extends Controller{
 
 
             try {
-            $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-
-            $db->exec("TRUNCATE TABLE plugin_settings;"); //delete to only store latest settings 
-
-            $res = $db->insert('plugin_settings', array(
-                'api_user' => $username, 
-                'api_password' => $password, 
-                'api_endpoint' => $port,
-                'api_host' => $host,
-            ));
-
             $config = $this->config();
             $config->setSection('db', array('resource' => $resource));
+            $config->setSection('api', array(
+                'host' => $host,
+                'port' => $port,
+                'user' => $username,
+                'password' => $password
+            ));
 
             $config->saveIni();
             } catch (Exception $e) {
@@ -266,15 +316,15 @@ class ModuleController extends Controller{
 
                 die(json_encode(
                     array(
-                    'message' => "Error Saving To Database, Make sure correct database is created and selected",
-                    'code' => '500', 
+                    'message' => "Error Saving Settings To config.ini",
+                    'code' => '500',
                     'action'=>'setup'
                      )
                     ));
 
             }
 
-        echo $res;
+        echo true;
         }
 
         exit;
@@ -285,14 +335,7 @@ class ModuleController extends Controller{
 
         try {
 
-            $resource = $this->getResource();
-
-            $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-            $query = 'SELECT * from plugin_settings';
-            $vals = $db->fetchAll($query);
-            if(!$vals){ //if no values
-                throw new Exception('Empty Table'); //settings table empty
-            }
+            $vals = $this->getApiSettings();
         }
         catch(Exception $e){
 
@@ -302,9 +345,9 @@ class ModuleController extends Controller{
                 die(json_encode(array('message' => $e->getMessage(), 'code' => '500')));
         }
 
-            $request_url = 'https://' . $vals[0]->api_host . ':'. $vals[0]->api_endpoint . '/v1/objects/dependencies';
-            $username = $vals[0]->api_user;
-            $password = $vals[0]->api_password;
+            $request_url = 'https://' . $vals['api_host'] . ':'. $vals['api_endpoint'] . '/v1/objects/dependencies';
+            $username = $vals['api_user'];
+            $password = $vals['api_password'];
             $headers = array(
                 'Accept: application/json',
                 'X-HTTP-Method-Override: GET'
@@ -344,17 +387,7 @@ class ModuleController extends Controller{
 
         try {
 
-            $resource = $this->getResource();
-
-            $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-
-            $query = 'SELECT * from plugin_settings';
-            $vals = $db->fetchAll($query);
-
-            if(!$vals){
-                throw new Exception('Empty Table');
-            
-            }
+            $vals = $this->getApiSettings();
         }
         catch(Exception $e){
 
@@ -363,9 +396,9 @@ class ModuleController extends Controller{
                 die(json_encode(array('message' => $e->getMessage(), 'code' => "500")));
         }
 
-            $request_url = 'https://' . $vals[0]->api_host . ':'. $vals[0]->api_endpoint . '/v1/objects/hosts';
-            $username = $vals[0]->api_user;
-            $password = $vals[0]->api_password;
+            $request_url = 'https://' . $vals['api_host'] . ':'. $vals['api_endpoint'] . '/v1/objects/hosts';
+            $username = $vals['api_user'];
+            $password = $vals['api_password'];
             $headers = array(
                 'Accept: application/json',
                 'X-HTTP-Method-Override: GET'
@@ -397,19 +430,19 @@ class ModuleController extends Controller{
                 die(json_encode(array('message' => curl_error($ch), 'code' => $code)));
                 // echo json_encode($code );
                 die;
-            } 
+            }
             echo $response;
             exit;
 
 }
 
     public function storenodepositionsAction(){
-        
+
 
         $resource = $this->getResource();
 
         $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-         
+
         $json = $_POST["json"];
 
         $data = json_decode($json, true);
@@ -487,40 +520,38 @@ class ModuleController extends Controller{
     }
 
     public function storegraphsettingsAction(){
-    // For some reason in this function, icingas database manager 'IcingaDbConnection' will store and retrieve data 
-    // based on whether the database is postgres or mysql, for example booleans for true and false are retrieved as
-    // '1' and '' (empty string), due to reading the data using a php method to convert to strings on retrieval at 
-    // some point, and integers are retrieved as strings for MySql, and actual ints for Postgres.
-
-    //to get around this, every thing is cast as an integer to avoid going through php's toString function
 
         $json = $_POST["json"];
 
-        $resource = $this->getResource();
-
         $data = json_decode($json, true);
-        
+
         if($data != null){
 
-
-            $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-
-            $db->exec("TRUNCATE TABLE graph_settings;");
-
+            $settings = $this->getDefaultGraphSettings();
 
             foreach($data as $name => $setting){
-
-                $res = $db->insert('graph_settings', array( //due to Zend reading bools as strings, converts true->1 false->""
-                    'setting_name' => $name, 
-                    'setting_value' => $setting["value"],
-                    'setting_type' =>  $setting["type"]
-                )); 
+                if(array_key_exists($name, $settings)){
+                    $settings[$name]['value'] = $setting['value'];
+                }
             }
-        }
 
-        if(!$res){
-            echo "An error occured while attempting to store settings.\n";
-            exit;
+            try {
+                $configSettings = array();
+
+                foreach($settings as $name => $setting){
+                    $configSettings[$name] = $setting['value'];
+                }
+
+                $config = $this->config();
+                $config->setSection('graph', $configSettings);
+                $config->saveIni();
+            } catch(Exception $e){
+                header('HTTP/1.1 500 Internal Server Error');
+                header('Content-Type: application/json; charset=UTF-8');
+                die(json_encode(array('message' => $e->getMessage(), 'code' => '500')));
+            }
+
+            echo true;
         }
 
        exit;
@@ -530,36 +561,15 @@ class ModuleController extends Controller{
 
         try {
 
-            $expectedNumberOfSettings = 9; //Number of settings expected out of database, change if setting added/removed
+            $vals = $this->getDefaultGraphSettings();
+            $config = $this->getModuleConfigData();
 
-            $resource = $this->getResource();
-
-            $db = IcingaDbConnection::fromResourceName($resource)->getDbAdapter();
-
-            $query = 'SELECT * from graph_settings';
-
-            $vals = $db->fetchAll($query);
-            
-            $vals = (array_values($vals));
-
-            if(!$vals || count($vals) != $expectedNumberOfSettings){ //catch empty or incomplete settings table, provide default
-                   
-                   $db->exec("TRUNCATE TABLE graph_settings;");
-
-                   $db->insert('graph_settings', array('setting_name' => 'default_dependency_template', 'setting_value' => '', 'setting_type' => 'string'));
-                   $db->insert('graph_settings', array('setting_name' => 'display_up', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'display_down', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'display_unreachable', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'display_only_dependencies', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'scaling', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'always_display_large_labels', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'alias_only', 'setting_value' => 'true', 'setting_type' => 'bool'));
-                   $db->insert('graph_settings', array('setting_name' => 'text_size', 'setting_value' => '25', 'setting_type' => 'int'));
-                   $db->insert('graph_settings', array('setting_name' => 'fullscreen_mode', 'setting_type'=> 'string', 'setting_value' => 'network'));
-
-               $vals = $db->fetchAll($query);
-
-
+            if(isset($config['graph'])){
+                foreach($config['graph'] as $name => $value){
+                    if(array_key_exists($name, $vals)){
+                        $vals[$name]['value'] = $value;
+                    }
+                }
             }
         } catch(Exception $e){
 
@@ -570,27 +580,7 @@ class ModuleController extends Controller{
             exit;
          }
 
-         $parsedSettings;
-
-         //parse settings
-
-
-            for ($i = 0; $i < count($vals); $i++) {
-
-                if ($vals[$i]-> setting_type == 'bool') {
-                    $parsedSettings[$vals[$i]-> setting_name ] = ($vals[$i] -> setting_value === 'true');
-                } else if ($vals[$i] -> setting_type == 'int') {
-
-                    $parsedSettings[$vals[$i] -> setting_name] = ((int)($vals[$i] -> setting_value));
-
-                } else {
-
-                    $parsedSettings[$vals[$i] -> setting_name] = $vals[$i] -> setting_value;
-
-                }
-            }
-
-        
+            $parsedSettings = $this->parseGraphSettings($vals);
 
             $json = json_encode($parsedSettings);
 
@@ -598,7 +588,7 @@ class ModuleController extends Controller{
 
             exit;
     }
-    
+
 
 }
 

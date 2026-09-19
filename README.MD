@@ -38,8 +38,27 @@ Create directory `/etc/icingaweb2/modules/dependency_plugin/`
 In that directory create file `config.ini` and add the following:
 ```
 [db]
-resource = "dependencies"
+resource = "dependencies_db"
+
+[api]
+host = "127.0.0.1"
+port = "5665"
+user = "dependencies"
+password = "dependencies"
+
+[graph]
+display_up = "true"
+display_down = "true"
+display_unreachable = "true"
+display_only_dependencies = "true"
+scaling = "true"
+label_large_nodes = "true"
+alias_only = "true"
+text_size = "25"
+fullscreen_mode = "network"
 ```
+
+The kickstart and graph settings pages write these values to `config.ini`. The `[db]` resource is the Icinga Web 2 database resource used for node positions; all module settings stay in `config.ini`.
 
 ## Icinga 2 Dependencies
 This module will attempt to graph ***any*** dependencies, an example apply rule to generate dependencies is shown below (create new file /etc/icinga2/conf.d/parents.conf):
@@ -47,13 +66,13 @@ This module will attempt to graph ***any*** dependencies, an example apply rule 
 apply Dependency "Parent" for (parent in host.vars.parents) to Host {
       parent_host_name = parent
       assign where host.address && host.vars.parents
-} 
+}
 ```
 this apply rule generates a dependency between hosts using a custom variable "parents".
 
 
 ### Custom Variable "Parents"
-To use the example apply rule to generate dependencies, insert the following into host configuration files or modify using icinga director. An example host with the correct parent variable is: 
+To use the example apply rule to generate dependencies, insert the following into host configuration files or modify using icinga director. An example host with the correct parent variable is:
 ```
 object Host "example-host" {
     import "generic-host"
@@ -69,7 +88,7 @@ object Host "example-host" {
 
 
 ## Create Database And Users
-Both Postgresql and MySQL are supported. 
+Both Postgresql and MySQL are supported.
 
 ### Setup db and User
 
@@ -125,7 +144,7 @@ using  `sudo vim /etc/icinga2/conf.d/api-users.conf` add the following lines to 
 ```
 ***Note: replace password "dependencies" with desired password***
 
-### Enable Module 
+### Enable Module
 In Icinga Web, navigate to Configuration > Modules, and select dependency plugin. Next to "State" click enable.
 
 ### Add Created Database to Icinga 2 Application Resources
@@ -139,7 +158,7 @@ In Icinga Web, navigate to Configuration > Modules, and select dependency plugin
 
 
 ### Launch Kickstart Page
-Next, navigate to the modules entry in Icinga Web 2 to automatically launch the kickstart page and finish the setup process by selecting created resource and entering in Icinga 2 API information. The icinga2 default API port is 5665. If you have misconfigured the settings and maybe getting an `Unexpected Error Encountered, Check Console` you may always call /dependency_plugin/module/kickstart again to correct the settings again.
+Next, navigate to the modules entry in Icinga Web 2 to automatically launch the kickstart page and finish the setup process by selecting created resource and entering in Icinga 2 API information. These settings are saved to `/etc/icingaweb2/modules/dependency_plugin/config.ini`. The icinga2 default API port is 5665. If you have misconfigured the settings and maybe getting an `Unexpected Error Encountered, Check Console` you may always call /dependency_plugin/module/kickstart again to correct the settings again.
 
 ### Add Custom Data Field
 Navigate to Icinga Director > Define Data Fields. Add new entry with Caption and Field name both equal to 'parents', Data type is Array, click Add.

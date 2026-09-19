@@ -1,1 +1,2 @@
-ALTER TABLE plugin_settings ADD api_host TEXT;
+-- Settings are stored in /etc/icingaweb2/modules/dependency_plugin/config.ini.
+-- No database migration is required.
