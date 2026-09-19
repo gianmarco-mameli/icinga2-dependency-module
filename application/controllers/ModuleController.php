@@ -276,6 +276,28 @@ class ModuleController extends Controller{
 
     }
 
+    public function getmodulesettingsAction(){
+
+        try {
+            $settings = array(
+                'resource' => $this->getConfigValue('db', 'resource', ''),
+                'host' => $this->getConfigValue('api', 'host', ''),
+                'port' => $this->getConfigValue('api', 'port', ''),
+                'username' => $this->getConfigValue('api', 'user', ''),
+                'password' => $this->getConfigValue('api', 'password', '')
+            );
+        } catch(Exception $e){
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => $e->getMessage(), 'code' => '500')));
+        }
+
+        echo json_encode($settings);
+
+        exit;
+
+    }
+
     public function storesettingsAction(){
 
 

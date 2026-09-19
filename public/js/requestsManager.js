@@ -187,6 +187,42 @@ function getSettings() {
 
 }
 
+function getModuleSettings() {
+
+    let requestURL = calculateRequestURL() + 'getModuleSettings';
+
+    var promise = new Promise((resolve, reject) => {
+
+
+        $.ajax({
+            url: requestURL,
+            type: 'GET',
+            success: function (data) {
+
+                settings = JSON.parse(data);
+
+                resolve({
+                    'type': 'module_settings',
+                    'data': settings
+                });
+            },
+            error: (error) => {
+                console.log(error);
+                reject({
+                    'type': 'module_settings',
+                    'message': error['responseJSON']['message'],
+                    'code': error['code']
+                });
+            }
+
+        });
+
+    });
+
+    return promise;
+
+}
+
 // function getTemplates() {
 
 //     let requestURL = calculateRequestURL() + 'templates';
